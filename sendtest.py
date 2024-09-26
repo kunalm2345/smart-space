@@ -15,7 +15,18 @@ addImage = {}
 # addImage["link"] = link
 addImage["format"] = "png"
 
-query = {}
+# get one image with a particular name
+query = {
+  "FindEntity": {
+    "class": "Image",
+    "constraints": {
+      "name": ["==", "sample_image.jpg"]
+    },
+    "results": 1,
+    "blob": true
+  }
+}
+
 query["AddImage"] = addImage
 
 all_queries.append(query)
