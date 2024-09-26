@@ -13,19 +13,21 @@ addImage = {}
 # addImage["properties"] = props
 # addImage["operations"] = operations
 # addImage["link"] = link
-addImage["format"] = "png"
+# addImage["format"] = "png"
 
 # get one image with a particular name
-query = {
-  "FindEntity": {
-    "class": "Image",
-    "constraints": {
-      "name": ["==", "sample_image.jpg"]
-    },
-    "results": 1,
-    "blob": true
-  }
-}
+query = {}
+
+# {
+#   "FindEntity": {
+#     "class": "Image",
+#     "constraints": {
+#       "name": ["==", "sample_image.jpg"]
+#     },
+#     "results": 1,
+#     "blob": true
+#   }
+# }
 
 query["AddImage"] = addImage
 
@@ -34,7 +36,7 @@ all_queries.append(query)
 print("Query Sent:")
 print(all_queries)
 
-response, res_arr = db.query(query=json.dumps(all_queries), blob_array=[blob_arr,])
+response, res_arr = db.query(query=json.dumps(all_queries)) #, blob_array=[blob_arr,])
 
 print("Response:")
 print(response, res_arr)
