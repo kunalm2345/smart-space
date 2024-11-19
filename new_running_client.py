@@ -106,12 +106,13 @@ def run(model: str, num_faces: int,
     # Start capturing video input from the camera
     picam2 = Picamera2()
     picam2.configure(picam2.create_preview_configuration(main={"format": 'RGB888', "size": (width, height)}))
-    picam2.set_controls({"AfMode": 2}) # Set the focus mode to Continous Auto Focus
+    picam2.set_controls({"AfMode": 0, "LensPosition": 4}) 
     picam2.start()
     f = open("output.txt", "w")
 
     # Create output directory for images
-    output_dir = "captured_images"
+    today = date.today()
+    output_dir = f'output/{today}'
     os.makedirs(output_dir, exist_ok=True)
 
     end_time = time.time() + record_duration
