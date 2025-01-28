@@ -13,7 +13,7 @@
 # limitations under the License.
 """Main scripts to run face landmarker."""
 
-'''vdms servers - 10.8.1.121 10.8.1.201'''
+'''vdms servers - 10.8.1.150 (L), 10.8.1.149 (R)'''
 
 import argparse
 import sys
@@ -49,7 +49,7 @@ queueLock = threading.Lock()
 def send_images_to_vdms(record_duration: int):
     #Connext to VDMS Server
     db = vdms.vdms()
-    db.connect("10.8.1.121", 55555)
+    db.connect("10.8.1.150", 55555)
 
     end_time = time.time() + record_duration
     while time.time() + 5 < end_time:
