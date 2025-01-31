@@ -18,7 +18,7 @@
 import argparse
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 import os
 
 from picamera2 import Picamera2
@@ -75,30 +75,6 @@ def run(model: str, num_faces: int,
     os.makedirs(output_dir, exist_ok=True)
 
     end_time = time.time() + record_duration
-        
-    # Visualization parameters
-    row_size = 50  # pixels
-    left_margin = 24  # pixels
-    text_color = (0, 0, 0)  # black
-    font_size = 1
-    font_thickness = 1
-    fps_avg_frame_count = 10
-
-    # Label box parameters
-    label_background_color = (255, 255, 255)  # White
-    label_padding_width = 1500  # pixels
-    
-    def save_result(result: vision.FaceLandmarkerResult,
-                    unused_output_image: mp.Image, timestamp_ms: int):
-        global FPS, COUNTER, START_TIME, DETECTION_RESULT
-
-        # Calculate the FPS
-        if COUNTER % fps_avg_frame_count == 0:
-            FPS = fps_avg_frame_count / (time.time() - START_TIME)
-            START_TIME = time.time()
-
-        DETECTION_RESULT = result
-        COUNTER += 1
 
     # Initialize the face landmarker model
     base_options = python.BaseOptions(model_asset_path=model)
@@ -109,8 +85,7 @@ def run(model: str, num_faces: int,
         min_face_detection_confidence=min_face_detection_confidence,
         min_face_presence_confidence=min_face_presence_confidence,
         min_tracking_confidence=min_tracking_confidence,
-        output_face_blendshapes=True,
-        result_callback=save_result)
+        output_face_blendshapes=True)
     detector = vision.FaceLandmarker.create_from_options(options)
 
     # Time between image captures
@@ -140,7 +115,7 @@ def run(model: str, num_faces: int,
 
             props = {}
             props["ID"] = "ss1"
-            props["Timestamp"] = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+            props["Timestamp"] = datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
             props["Landmark"] = str(DETECTION_RESULT)
 
             addImage = {}
@@ -160,7 +135,7 @@ def run(model: str, num_faces: int,
             print("Response:")
             print(response, res_arr)
 
-            f.write(datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
+            f.write(datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
             f.write(" ")
             f.write(str(DETECTION_RESULT))
             f.write("\n")
@@ -215,17 +190,17 @@ def main():
         '--frameWidth',
         help='Width of frame to capture from camera.',
         required=False,
-        default=4656)
+        default=1280)
     parser.add_argument(
         '--frameHeight',
         help='Height of frame to capture from camera.',
         required=False,
-        default=3496)
+        default=960)
     parser.add_argument(
         '--recordDuration',
         help='Duration in seconds for which to record the images.',
         required=False,
-        default=60 * 60)  # Default to 15 minutes
+        default=15 * 60)  # Default to 15 minutes
     parser.add_argument(
         '--fps',
         help='Frame rate for saving images.',

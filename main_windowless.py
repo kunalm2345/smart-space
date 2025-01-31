@@ -17,13 +17,18 @@ import argparse
 import sys
 import time
 from datetime import datetime
-import os
 
 from picamera2 import Picamera2
+
+
 import cv2
 import mediapipe as mp
+
+# from picamera2 import Picamera2, Preview
+
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
+from mediapipe.framework.formats import landmark_pb2
 
 mp_face_mesh = mp.solutions.face_mesh
 mp_drawing = mp.solutions.drawing_utils
@@ -34,40 +39,41 @@ COUNTER, FPS = 0, 0
 START_TIME = time.time()
 DETECTION_RESULT = None
 
+
 def run(model: str, num_faces: int,
         min_face_detection_confidence: float,
         min_face_presence_confidence: float, min_tracking_confidence: float,
-        camera_id: int, width: int, height: int, record_duration: int,
-        frame_rate: int) -> None:
-    """Continuously run inference on images acquired from the camera and save them as JPG files.
+        camera_id: int, width: int, height: int, record_duration: int) -> None:
+    """Continuously run inference on images acquired from the camera.
 
-    Args:
-        model: Name of the face landmarker model bundle.
-        num_faces: Max number of faces that can be detected by the landmarker.
-        min_face_detection_confidence: The minimum confidence score for face
-            detection to be considered successful.
-        min_face_presence_confidence: The minimum confidence score of face
-            presence score in the face landmark detection.
-        min_tracking_confidence: The minimum confidence score for the face
-            tracking to be considered successful.
-        camera_id: The camera id to be passed to OpenCV.
-        width: The width of the frame captured from the camera.
-        height: The height of the frame captured from the camera.
-        frame_rate: The frame rate for saving images.
-    """
+  Args:
+      model: Name of the face landmarker model bundle.
+      num_faces: Max number of faces that can be detected by the landmarker.
+      min_face_detection_confidence: The minimum confidence score for face
+        detection to be considered successful.
+      min_face_presence_confidence: The minimum confidence score of face
+        presence score in the face landmark detection.
+      min_tracking_confidence: The minimum confidence score for the face
+        tracking to be considered successful.
+      camera_id: The camera id to be passed to OpenCV.
+      width: The width of the frame captured from the camera.
+      height: The height of the frame captured from the camera.
+  """
 
     # Start capturing video input from the camera
     picam2 = Picamera2()
     picam2.configure(picam2.create_preview_configuration(main={"format": 'RGB888', "size": (width, height)}))
     picam2.start()
     f = open("output.txt", "w")
+    # cap = cv2.VideoCapture(camera_id)
+    # cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+    # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
 
-    # Create output directory for images
-    output_dir = "captured_images"
-    os.makedirs(output_dir, exist_ok=True)
+    #Video writer
+    video = cv2.VideoWriter('video.mp4', cv2.VideoWriter_fourcc(*"mp4v"), 10, (width, height))
 
     end_time = time.time() + record_duration
-    
+
     # Visualization parameters
     row_size = 50  # pixels
     left_margin = 24  # pixels
@@ -80,7 +86,7 @@ def run(model: str, num_faces: int,
     label_background_color = (255, 255, 255)  # White
     label_padding_width = 1500  # pixels
 
-    '''def save_result(result: vision.FaceLandmarkerResult,
+    def save_result(result: vision.FaceLandmarkerResult,
                     unused_output_image: mp.Image, timestamp_ms: int):
         global FPS, COUNTER, START_TIME, DETECTION_RESULT
 
@@ -90,9 +96,7 @@ def run(model: str, num_faces: int,
             START_TIME = time.time()
 
         DETECTION_RESULT = result
-        COUNTER += 1'''
-    def save_result(result: vision.FaceLandmarkerResult, unused_output_image: mp.Image, timestamp_ms: int):
-        print("Face landmarks detected!")
+        COUNTER += 1
 
     # Initialize the face landmarker model
     base_options = python.BaseOptions(model_asset_path=model)
@@ -107,41 +111,37 @@ def run(model: str, num_faces: int,
         result_callback=save_result)
     detector = vision.FaceLandmarker.create_from_options(options)
 
-
-    # Time between image captures
-    capture_interval = 1 / frame_rate
-
     # Continuously capture images from the camera and run inference
     try:
-        while time.time() < end_time:
-            start_time = time.time()
+        while time.time()<end_time:
+            # success, image = cap.read()
+            # if not success:
+            #  sys.exit(
+            #      'ERROR: Unable to read from webcam. Please verify your webcam settings.'
+            #  )
             image = picam2.capture_array()
+            video.write(image)
             rgb_image = image
+            # rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_image)
 
-            # Run face landmarker using the model
+            # Run face landmarker using the model.
             detector.detect_async(mp_image, time.time_ns() // 1_000_000)
-            
             f.write(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
             f.write(" ")
             f.write(str(DETECTION_RESULT))
             f.write("\n")
 
-            # Save the image at the specified frame rate
-            image_filename = os.path.join(output_dir, f'image_{datetime.now().strftime("%Y%m%d_%H%M%S")}.jpg')
-            cv2.imwrite(image_filename, image)
-
-            # Wait for the remaining time to meet the desired frame rate
-            elapsed_time = time.time() - start_time
-            if elapsed_time < capture_interval:
-                time.sleep(capture_interval - elapsed_time)
-
     except KeyboardInterrupt:
         pass
 
     detector.close()
+    #cap.release()
     cv2.destroyAllWindows()
+    video.release()
     f.close()
+
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -174,34 +174,34 @@ def main():
              'considered successful.',
         required=False,
         default=0.5)
+    # Finding the camera ID can be very reliant on platform-dependent methods.
+    # One common approach is to use the fact that camera IDs are usually indexed sequentially by the OS, starting from 0.
+    # Here, we use OpenCV and create a VideoCapture object for each potential ID with 'cap = cv2.VideoCapture(i)'.
+    # If 'cap' is None or not 'cap.isOpened()', it indicates the camera ID is not available.
     parser.add_argument(
         '--cameraId', help='Id of camera.', required=False, default=0)
     parser.add_argument(
         '--frameWidth',
         help='Width of frame to capture from camera.',
         required=False,
-        default=2328)
+        default=1280)
     parser.add_argument(
         '--frameHeight',
         help='Height of frame to capture from camera.',
         required=False,
-        default=1748)
+        default=960)
     parser.add_argument(
         '--recordDuration',
-        help='Duration in seconds for which to record the images.',
+        help='Duration in seconds for which to record the video.',
         required=False,
-        default=15 * 60)  # Default to 15 minutes
-    parser.add_argument(
-        '--fps',
-        help='Frame rate for saving images.',
-        required=False,
-        default=1)  # Default to 1 frame per second
+        default=15 * 60) 
     args = parser.parse_args()
 
     run(args.model, int(args.numFaces), args.minFaceDetectionConfidence,
         args.minFacePresenceConfidence, args.minTrackingConfidence,
-        int(args.cameraId), args.frameWidth, args.frameHeight,
-        int(args.recordDuration), int(args.fps))
+        int(args.cameraId), args.frameWidth, args.frameHeight, int(args.recordDuration))
+
+
 
 if __name__ == '__main__':
     main()

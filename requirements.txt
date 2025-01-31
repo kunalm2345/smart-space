@@ -1,1 +1,2 @@
-paramiko
+picamera2
+libcamera

@@ -1,0 +1,5 @@
+2024-10-22 21:17:33.066 FaceLandmarkerResult(face_landmarks=[], face_blendshapes=[], facial_transformation_matrixes=[])
+2024-10-22 21:17:33.719 FaceLandmarkerResult(face_landmarks=[], face_blendshapes=[], facial_transformation_matrixes=[])
+2024-10-22 21:17:34.722 FaceLandmarkerResult(face_landmarks=[], face_blendshapes=[], facial_transformation_matrixes=[])
+2024-10-22 21:17:35.719 FaceLandmarkerResult(face_landmarks=[], face_blendshapes=[], facial_transformation_matrixes=[])
+2024-10-22 21:17:36.728 FaceLandmarkerResult(face_landmarks=[], face_blendshapes=[], facial_transformation_matrixes=[])
