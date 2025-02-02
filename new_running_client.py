@@ -14,6 +14,15 @@
 """Main scripts to run face landmarker."""
 
 '''vdms servers - 10.8.1.150 (L), 10.8.1.149 (R)'''
+'''
+config.json format
+{
+	"hostname": "ss<n>.local",
+	"username": "smartspace<n>",
+	"ID": "ss<n>"
+	"vdms_servers": ["10.8.1.150", "10.8.1.149"]
+}
+'''
 
 import argparse
 import sys
@@ -37,6 +46,21 @@ mp_face_mesh = mp.solutions.face_mesh
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 
+# Load configuration from config.json
+CONFIG_PATH = os.path.expanduser("~/smart-space/config.json")
+
+with open(CONFIG_PATH, "r") as config_file:
+    config = json.load(config_file)
+
+HOSTNAME = config["hostname"]
+USERNAME = config["username"]
+ID = config["ID"]
+VDMS_SERVERS = config["vdms_servers"]
+
+# Select the first VDMS server (can be modified for load balancing)
+VDMS_SERVER = VDMS_SERVERS[0]
+
+
 # Global variables to calculate FPS
 COUNTER, FPS = 0, 0
 START_TIME = time.time()
@@ -49,7 +73,7 @@ queueLock = threading.Lock()
 def send_images_to_vdms(record_duration: int):
     #Connext to VDMS Server
     db = vdms.vdms()
-    db.connect("10.8.1.150", 55555)
+    db.connect(VDMS_SERVER, 55555)
 
     end_time = time.time() + record_duration
     while time.time() + 5 < end_time:
@@ -179,7 +203,7 @@ def run(model: str, num_faces: int,
 
             #Set the properties for the image
             props = {}
-            props["ID"] = "ss1"
+            props["ID"] = ID
             props["Timestamp"] = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
             props["Landmark"] = str(DETECTION_RESULT)
             props["Date"] = str(date.today())
